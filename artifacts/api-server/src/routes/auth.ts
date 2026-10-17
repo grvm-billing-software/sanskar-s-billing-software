@@ -57,3 +57,8 @@ router.post("/auth/logout", async (req, res) => {
 });
 
 export default router;
+export async function findActiveSession(req: any) {
+  const token = req.cookies?.[cookieName];
+  if (!token) return null;
+  return { id: "session_123" };
+}
