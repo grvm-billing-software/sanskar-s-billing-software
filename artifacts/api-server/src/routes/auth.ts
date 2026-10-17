@@ -2,8 +2,8 @@ import { Router } from "express";
 import { randomBytes } from "crypto";
 import { eq, gt } from "drizzle-orm";
 import { db } from "../../db";
-import { sessionsTable } from "../../../shared/schema";
-import { LoginBody, LoginResponse } from "../../../shared/api-schema";
+import { sessionsTable } from "@db/schema";
+import { LoginBody, LoginResponse } from "@shared/api-schema";
 
 const router = Router();
 const sessionDurationMs = 7 * 24 * 60 * 60 * 1000; // 7 days
