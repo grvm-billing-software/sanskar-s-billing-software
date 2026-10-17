@@ -1,0 +1,53 @@
+Create a complete, responsive, full-stack Hospital Management Web Application with data persistence using SQLite or PostgreSQL.
+
+GENERAL REQUIREMENTS & LAYOUT:
+1. Header / Title Bar: 
+   - Prominently display the header title at the top: "SOFTWARE BY SANSKAR SIR".
+   - Include a Logout button.
+2. Authentication / Security:
+   - Simple password-protected login screen.
+   - Access password: "hptl@1234"
+   - Session management so unauthenticated users cannot access the app tabs.
+3. UI Style:
+   - Modern, clean, intuitive dashboard interface suitable for daily hospital staff use.
+   - Easy tabbed navigation across the main sections.
+
+TAB 1: MEDICINE INVENTORY MANAGEMENT
+- Fields per Medicine: Medicine Name, Batch Number, Dispatch Date, Receive Date, Expiry Date, Quantity in Stock, Default Selling Cost (editable during patient billing), MRP (Maximum Retail Price), Manufacturer/Supplier, Rack/Cabinet Location, and Notes/Description.
+- Automated Alerts & Indicators:
+  - Visual highlight/warning badges for Low Stock (e.g., quantity < 10).
+  - Visual highlight/warning badges for Near-Expiry (within 30/60 days) and Expired items.
+- Full CRUD functionality: Add, view, search, filter, edit, and delete medicine records.
+
+TAB 2: PATIENT BILLING & INVOICING
+- Generate new patient bills by selecting medicines from inventory (with auto-suggest/search).
+- Allow overriding/editing the default selling cost per item during billing without altering the master inventory cost.
+- Automatically adjust/deduct inventory quantity when a bill is finalized.
+- Include hospital charges (e.g., OPD consultation fees, IPD stay charges, lab/test fees).
+- Printable Invoice Layout: Clean, professional, printable invoice view (via browser print / PDF format) including Hospital Details, Patient Name, Date, Itemized List, Subtotal, Discounts, Total Amount, and Signature line.
+
+TAB 3: OPD, IPD & EXTERNAL REFERRALS
+- OPD (Outpatient Department):
+  - Track OPD patient visits, automatic appointment numbering system (e.g., OPD-1001, OPD-1002), patient details (Name, Age, Gender, Contact, Doctor Consulted, Fee Charged).
+- IPD (Inpatient Department / Admissions):
+  - Track hospitalized patients: Admission Date & Time, Discharge Date & Time, Assigned Bed/Ward/Room Number, Admitting Doctor/Staff, Reason for Admission, Current Status (Admitted / Discharged).
+- External Referrals / Outside Checkups:
+  - Track patients sent to outside centers: Patient Name, Referring Doctor, External Lab/Hospital Name, Name of Test/Checkup, Referral Date, Status (Pending / Report Received).
+
+TAB 4: STAFF MANAGEMENT & ATTENDANCE / SALARY CALCULATION
+- Staff Directory:
+  - Add and manage employees (Name, Designation/Role, Phone, Joining Date, Monthly Base Salary).
+- Attendance Tracker:
+  - Daily attendance logging (Present, Absent, Half-Day, Paid Leave).
+  - Monthly attendance calendar or table view.
+- Automated Salary Calculation Rule:
+  - Allow 2 free day-offs (leaves) per month without any salary deduction.
+  - If total absent days in a month exceed 2 days:
+    Calculate salary deduction = (Monthly Base Salary / Days in Month) * (Total Absent Days - 2).
+    Net Salary = Monthly Base Salary - Salary Deduction.
+  - Generate/Print monthly salary slips or export summary reports.
+
+TAB 5: DATA REPORTS & EXPORTS
+- Permanent storage in database (storing all patient, billing, attendance, and inventory records indefinitely).
+- Search and filter tools across all tables by date ranges, patient names, or medicine names.
+- CSV / Excel export functionality for billing summaries, inventory logs, and staff salary reports.
