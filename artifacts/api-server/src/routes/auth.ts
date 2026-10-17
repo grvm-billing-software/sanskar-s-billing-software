@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { randomBytes } from "crypto";
 import { eq, gt } from "drizzle-orm";
-import { db } from "@db";
+import { db } from "../db";
 import { sessionsTable } from "../../../shared/schema";
 import { LoginBody, LoginResponse } from "../../../shared/api-schema";
 
