@@ -2,14 +2,30 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 0.2.0
+  description: Hospital operations API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Password-protected hospital access
+  - name: dashboard
+    description: At-a-glance hospital operations
+  - name: inventory
+    description: Medicine inventory
+  - name: billing
+    description: Patient invoices
+  - name: patients
+    description: OPD, IPD, and external referrals
+  - name: staff
+    description: Staff directory, attendance, and payroll
+  - name: reports
+    description: CSV exports
+security:
+  - sessionCookie: []
 paths:
   /healthz:
     get:
@@ -24,7 +40,591 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      security: []
+      summary: Start an authenticated session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthState"
+        "401":
+          description: Invalid password
+  /auth/session:
+    get:
+      operationId: getSession
+      tags: [auth]
+      security: []
+      summary: Check the current session
+      responses:
+        "200":
+          description: Current session state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthState"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      security: []
+      summary: End the current session
+      responses:
+        "200":
+          description: Session ended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthState"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard totals and recent invoices
+      responses:
+        "200":
+          description: Hospital dashboard snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /medicines:
+    get:
+      operationId: listMedicines
+      tags: [inventory]
+      summary: Search and filter the medicine inventory
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: stock
+          schema:
+            type: string
+            enum: [all, low, available]
+        - in: query
+          name: expiry
+          schema:
+            type: string
+            enum: [all, within30, days31to60, expired]
+      responses:
+        "200":
+          description: Matching medicines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Medicine"
+    post:
+      operationId: createMedicine
+      tags: [inventory]
+      summary: Add a medicine to inventory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MedicineInput"
+      responses:
+        "201":
+          description: Created medicine
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Medicine"
+  /medicines/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      operationId: getMedicine
+      tags: [inventory]
+      summary: Get a medicine record
+      responses:
+        "200":
+          description: Medicine
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Medicine"
+        "404":
+          description: Medicine not found
+    patch:
+      operationId: updateMedicine
+      tags: [inventory]
+      summary: Update a medicine record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MedicineUpdate"
+      responses:
+        "200":
+          description: Updated medicine
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Medicine"
+    delete:
+      operationId: deleteMedicine
+      tags: [inventory]
+      summary: Delete a medicine record
+      responses:
+        "204":
+          description: Medicine deleted
+  /bills:
+    get:
+      operationId: listBills
+      tags: [billing]
+      summary: Search invoices
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: startDate
+          schema: { type: string, format: date }
+        - in: query
+          name: endDate
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Matching invoices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bill"
+    post:
+      operationId: createBill
+      tags: [billing]
+      summary: Finalize an invoice and deduct medicine stock atomically
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BillInput"
+      responses:
+        "201":
+          description: Finalized invoice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillDetail"
+        "409":
+          description: Insufficient stock
+  /bills/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      operationId: getBill
+      tags: [billing]
+      summary: Get invoice and line items
+      responses:
+        "200":
+          description: Invoice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillDetail"
+        "404":
+          description: Invoice not found
+  /opd-visits:
+    get:
+      operationId: listOpdVisits
+      tags: [patients]
+      summary: Search outpatient visits
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: startDate
+          schema: { type: string, format: date }
+        - in: query
+          name: endDate
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Matching OPD visits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpdVisit"
+    post:
+      operationId: createOpdVisit
+      tags: [patients]
+      summary: Register an outpatient visit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpdVisitInput"
+      responses:
+        "201":
+          description: Registered visit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpdVisit"
+  /opd-visits/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      operationId: updateOpdVisit
+      tags: [patients]
+      summary: Update an outpatient visit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpdVisitUpdate"
+      responses:
+        "200":
+          description: Updated visit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpdVisit"
+    delete:
+      operationId: deleteOpdVisit
+      tags: [patients]
+      summary: Delete an outpatient visit
+      responses:
+        "204":
+          description: Visit deleted
+  /ipd-admissions:
+    get:
+      operationId: listIpdAdmissions
+      tags: [patients]
+      summary: Search inpatient admissions
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [all, admitted, discharged]
+      responses:
+        "200":
+          description: Matching admissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IpdAdmission"
+    post:
+      operationId: createIpdAdmission
+      tags: [patients]
+      summary: Admit an inpatient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IpdAdmissionInput"
+      responses:
+        "201":
+          description: Created admission
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IpdAdmission"
+  /ipd-admissions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      operationId: updateIpdAdmission
+      tags: [patients]
+      summary: Update admission details or discharge a patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IpdAdmissionUpdate"
+      responses:
+        "200":
+          description: Updated admission
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IpdAdmission"
+    delete:
+      operationId: deleteIpdAdmission
+      tags: [patients]
+      summary: Delete an admission
+      responses:
+        "204":
+          description: Admission deleted
+  /referrals:
+    get:
+      operationId: listReferrals
+      tags: [patients]
+      summary: Search external referrals
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [all, pending, received]
+      responses:
+        "200":
+          description: Matching referrals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Referral"
+    post:
+      operationId: createReferral
+      tags: [patients]
+      summary: Record an external referral
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReferralInput"
+      responses:
+        "201":
+          description: Created referral
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Referral"
+  /referrals/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      operationId: updateReferral
+      tags: [patients]
+      summary: Update referral or report status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReferralUpdate"
+      responses:
+        "200":
+          description: Updated referral
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Referral"
+    delete:
+      operationId: deleteReferral
+      tags: [patients]
+      summary: Delete a referral
+      responses:
+        "204":
+          description: Referral deleted
+  /staff:
+    get:
+      operationId: listStaff
+      tags: [staff]
+      summary: Search staff directory
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+      responses:
+        "200":
+          description: Staff members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffMember"
+    post:
+      operationId: createStaff
+      tags: [staff]
+      summary: Add a staff member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffInput"
+      responses:
+        "201":
+          description: Created staff member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffMember"
+  /staff/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      operationId: updateStaff
+      tags: [staff]
+      summary: Update a staff member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffUpdate"
+      responses:
+        "200":
+          description: Updated staff member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffMember"
+    delete:
+      operationId: deleteStaff
+      tags: [staff]
+      summary: Delete a staff member
+      responses:
+        "204":
+          description: Staff member deleted
+  /attendance:
+    get:
+      operationId: listAttendance
+      tags: [staff]
+      summary: List attendance for a calendar month
+      parameters:
+        - in: query
+          name: month
+          required: true
+          schema:
+            type: string
+            pattern: "^\\d{4}-\\d{2}$"
+      responses:
+        "200":
+          description: Monthly attendance
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttendanceEntry"
+    post:
+      operationId: saveAttendance
+      tags: [staff]
+      summary: Record or replace attendance for one staff member and date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendanceInput"
+      responses:
+        "200":
+          description: Saved attendance entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceEntry"
+  /salary-reports:
+    get:
+      operationId: getSalaryReports
+      tags: [staff]
+      summary: Calculate monthly salaries using the two-absence allowance
+      parameters:
+        - in: query
+          name: month
+          required: true
+          schema:
+            type: string
+            pattern: "^\\d{4}-\\d{2}$"
+      responses:
+        "200":
+          description: Monthly salary calculations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SalaryReport"
+  /reports/billing.csv:
+    get:
+      operationId: exportBillingCsv
+      tags: [reports]
+      summary: Export invoices for a date range as CSV
+      parameters:
+        - in: query
+          name: startDate
+          schema: { type: string, format: date }
+        - in: query
+          name: endDate
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Billing CSV file
+          content:
+            text/csv:
+              schema: { type: string }
+  /reports/inventory.csv:
+    get:
+      operationId: exportInventoryCsv
+      tags: [reports]
+      summary: Export medicine inventory as CSV
+      responses:
+        "200":
+          description: Inventory CSV file
+          content:
+            text/csv:
+              schema: { type: string }
+  /reports/salary.csv:
+    get:
+      operationId: exportSalaryCsv
+      tags: [reports]
+      summary: Export salary calculations for a month as CSV
+      parameters:
+        - in: query
+          name: month
+          required: true
+          schema:
+            type: string
+            pattern: "^\\d{4}-\\d{2}$"
+      responses:
+        "200":
+          description: Salary CSV file
+          content:
+            text/csv:
+              schema: { type: string }
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: hospital_session
+  parameters:
+    Id:
+      in: path
+      name: id
+      required: true
+      schema: { type: integer }
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +633,299 @@ components:
           type: string
       required:
         - status
+    AuthState:
+      type: object
+      properties:
+        authenticated: { type: boolean }
+      required: [authenticated]
+    LoginInput:
+      type: object
+      properties:
+        password: { type: string, minLength: 1 }
+      required: [password]
+    Medicine:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        batchNumber: { type: string }
+        dispatchDate: { type: ["string", "null"], format: date }
+        receiveDate: { type: ["string", "null"], format: date }
+        expiryDate: { type: string, format: date }
+        quantity: { type: integer }
+        sellingCost: { type: number }
+        mrp: { type: number }
+        supplier: { type: string }
+        location: { type: string }
+        notes: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, name, batchNumber, expiryDate, quantity, sellingCost, mrp, supplier, location, notes, createdAt]
+    MedicineInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        batchNumber: { type: string, minLength: 1 }
+        dispatchDate: { type: ["string", "null"], format: date }
+        receiveDate: { type: ["string", "null"], format: date }
+        expiryDate: { type: string, format: date }
+        quantity: { type: integer, minimum: 0 }
+        sellingCost: { type: number, minimum: 0 }
+        mrp: { type: number, minimum: 0 }
+        supplier: { type: string }
+        location: { type: string }
+        notes: { type: string }
+      required: [name, batchNumber, expiryDate, quantity, sellingCost, mrp, supplier, location, notes]
+    MedicineUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        batchNumber: { type: string, minLength: 1 }
+        dispatchDate: { type: ["string", "null"], format: date }
+        receiveDate: { type: ["string", "null"], format: date }
+        expiryDate: { type: string, format: date }
+        quantity: { type: integer, minimum: 0 }
+        sellingCost: { type: number, minimum: 0 }
+        mrp: { type: number, minimum: 0 }
+        supplier: { type: string }
+        location: { type: string }
+        notes: { type: string }
+    Bill:
+      type: object
+      properties:
+        id: { type: integer }
+        invoiceNumber: { type: string }
+        patientName: { type: string }
+        patientContact: { type: string }
+        invoiceDate: { type: string, format: date-time }
+        medicineSubtotal: { type: number }
+        opdFee: { type: number }
+        ipdFee: { type: number }
+        labFee: { type: number }
+        discount: { type: number }
+        total: { type: number }
+      required: [id, invoiceNumber, patientName, patientContact, invoiceDate, medicineSubtotal, opdFee, ipdFee, labFee, discount, total]
+    BillLine:
+      type: object
+      properties:
+        id: { type: integer }
+        medicineId: { type: integer }
+        medicineName: { type: string }
+        batchNumber: { type: string }
+        quantity: { type: integer }
+        unitPrice: { type: number }
+        lineTotal: { type: number }
+      required: [id, medicineId, medicineName, batchNumber, quantity, unitPrice, lineTotal]
+    BillDetail:
+      allOf:
+        - $ref: "#/components/schemas/Bill"
+        - type: object
+          properties:
+            lines:
+              type: array
+              items: { $ref: "#/components/schemas/BillLine" }
+          required: [lines]
+    BillLineInput:
+      type: object
+      properties:
+        medicineId: { type: integer }
+        quantity: { type: integer, minimum: 1 }
+        unitPrice: { type: number, minimum: 0 }
+      required: [medicineId, quantity, unitPrice]
+    BillInput:
+      type: object
+      properties:
+        patientName: { type: string, minLength: 1 }
+        patientContact: { type: string }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/BillLineInput" }
+        opdFee: { type: number, minimum: 0 }
+        ipdFee: { type: number, minimum: 0 }
+        labFee: { type: number, minimum: 0 }
+        discount: { type: number, minimum: 0 }
+      required: [patientName, patientContact, lines, opdFee, ipdFee, labFee, discount]
+    OpdVisit:
+      type: object
+      properties:
+        id: { type: integer }
+        appointmentNumber: { type: string }
+        patientName: { type: string }
+        age: { type: integer }
+        gender: { type: string }
+        contact: { type: string }
+        doctor: { type: string }
+        fee: { type: number }
+        visitDate: { type: string, format: date-time }
+      required: [id, appointmentNumber, patientName, age, gender, contact, doctor, fee, visitDate]
+    OpdVisitInput:
+      type: object
+      properties:
+        patientName: { type: string, minLength: 1 }
+        age: { type: integer, minimum: 0 }
+        gender: { type: string }
+        contact: { type: string }
+        doctor: { type: string }
+        fee: { type: number, minimum: 0 }
+        visitDate: { type: string, format: date-time }
+      required: [patientName, age, gender, contact, doctor, fee, visitDate]
+    OpdVisitUpdate:
+      type: object
+      properties:
+        patientName: { type: string, minLength: 1 }
+        age: { type: integer, minimum: 0 }
+        gender: { type: string }
+        contact: { type: string }
+        doctor: { type: string }
+        fee: { type: number, minimum: 0 }
+        visitDate: { type: string, format: date-time }
+    IpdAdmission:
+      type: object
+      properties:
+        id: { type: integer }
+        patientName: { type: string }
+        patientContact: { type: string }
+        admissionAt: { type: string, format: date-time }
+        dischargeAt: { type: ["string", "null"], format: date-time }
+        room: { type: string }
+        doctor: { type: string }
+        reason: { type: string }
+        status:
+          type: string
+          enum: [admitted, discharged]
+      required: [id, patientName, patientContact, admissionAt, room, doctor, reason, status]
+    IpdAdmissionInput:
+      type: object
+      properties:
+        patientName: { type: string, minLength: 1 }
+        patientContact: { type: string }
+        admissionAt: { type: string, format: date-time }
+        room: { type: string }
+        doctor: { type: string }
+        reason: { type: string }
+      required: [patientName, patientContact, admissionAt, room, doctor, reason]
+    IpdAdmissionUpdate:
+      type: object
+      properties:
+        patientName: { type: string, minLength: 1 }
+        patientContact: { type: string }
+        admissionAt: { type: string, format: date-time }
+        dischargeAt: { type: ["string", "null"], format: date-time }
+        room: { type: string }
+        doctor: { type: string }
+        reason: { type: string }
+        status:
+          type: string
+          enum: [admitted, discharged]
+    Referral:
+      type: object
+      properties:
+        id: { type: integer }
+        patientName: { type: string }
+        referringDoctor: { type: string }
+        center: { type: string }
+        testName: { type: string }
+        referralDate: { type: string, format: date }
+        status:
+          type: string
+          enum: [pending, received]
+      required: [id, patientName, referringDoctor, center, testName, referralDate, status]
+    ReferralInput:
+      type: object
+      properties:
+        patientName: { type: string, minLength: 1 }
+        referringDoctor: { type: string }
+        center: { type: string }
+        testName: { type: string }
+        referralDate: { type: string, format: date }
+        status:
+          type: string
+          enum: [pending, received]
+      required: [patientName, referringDoctor, center, testName, referralDate, status]
+    ReferralUpdate:
+      type: object
+      properties:
+        patientName: { type: string, minLength: 1 }
+        referringDoctor: { type: string }
+        center: { type: string }
+        testName: { type: string }
+        referralDate: { type: string, format: date }
+        status:
+          type: string
+          enum: [pending, received]
+    StaffMember:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        designation: { type: string }
+        phone: { type: string }
+        joiningDate: { type: string, format: date }
+        monthlySalary: { type: number }
+        createdAt: { type: string, format: date-time }
+      required: [id, name, designation, phone, joiningDate, monthlySalary, createdAt]
+    StaffInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        designation: { type: string }
+        phone: { type: string }
+        joiningDate: { type: string, format: date }
+        monthlySalary: { type: number, minimum: 0 }
+      required: [name, designation, phone, joiningDate, monthlySalary]
+    StaffUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        designation: { type: string }
+        phone: { type: string }
+        joiningDate: { type: string, format: date }
+        monthlySalary: { type: number, minimum: 0 }
+    AttendanceEntry:
+      type: object
+      properties:
+        id: { type: integer }
+        staffId: { type: integer }
+        staffName: { type: string }
+        date: { type: string, format: date }
+        status:
+          type: string
+          enum: [present, absent, half-day, paid-leave]
+      required: [id, staffId, staffName, date, status]
+    AttendanceInput:
+      type: object
+      properties:
+        staffId: { type: integer }
+        date: { type: string, format: date }
+        status:
+          type: string
+          enum: [present, absent, half-day, paid-leave]
+      required: [staffId, date, status]
+    SalaryReport:
+      type: object
+      properties:
+        staffId: { type: integer }
+        staffName: { type: string }
+        designation: { type: string }
+        month: { type: string }
+        monthlySalary: { type: number }
+        absentDays: { type: integer }
+        freeAbsences: { type: integer }
+        deduction: { type: number }
+        netSalary: { type: number }
+      required: [staffId, staffName, designation, month, monthlySalary, absentDays, freeAbsences, deduction, netSalary]
+    DashboardSummary:
+      type: object
+      properties:
+        medicineCount: { type: integer }
+        lowStockCount: { type: integer }
+        nearExpiryCount: { type: integer }
+        expiredCount: { type: integer }
+        admittedCount: { type: integer }
+        todayOpdCount: { type: integer }
+        monthlyBilling: { type: number }
+        recentBills:
+          type: array
+          items: { $ref: "#/components/schemas/Bill" }
+      required: [medicineCount, lowStockCount, nearExpiryCount, expiredCount, admittedCount, todayOpdCount, monthlyBilling, recentBills]
 

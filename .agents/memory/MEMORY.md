@@ -1,0 +1,1 @@
+- [OpenAPI date-only fields](openapi-date-only-fields.md) — Restore `format: date` values to `YYYY-MM-DD` after server-side validation before returning JSON.

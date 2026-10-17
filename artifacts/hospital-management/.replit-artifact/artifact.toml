@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Hospital Management System"
+description = "A responsive hospital operations app for managing medicine inventory, patient billing, OPD/IPD/referrals, staff attendance and payroll, with persistent records and exportable reports."
+version = "1.0.0"
+id = "artifacts/hospital-management"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20044
+
+[services.development]
+run = "pnpm --filter @workspace/hospital-management run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hospital-management", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/hospital-management/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20044"
+BASE_PATH = "/"
