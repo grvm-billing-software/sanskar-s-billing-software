@@ -30,7 +30,9 @@ export async function findActiveSession(token: unknown) {
   const [session] = await db
     .select()
     .from(sessionsTable)
-    .where(and(eq(sessionsTable.id, token), gt(sessionsTable.expiresAt, new Date())))
+    .where(
+      and(eq(sessionsTable.id, token), gt(sessionsTable.expiresAt, new Date())),
+    )
     .limit(1);
   return session;
 }
@@ -42,12 +44,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
-  const expectedPassword = process.env.HOSPITAL_ACCESS_PASSWORD;
-  if (!expectedPassword) {
-    req.log.error("HOSPITAL_ACCESS_PASSWORD is not configured");
-    res.status(503).json({ error: "Login is not configured" });
-    return;
-  }
+  const expectedPassword = "hptl@1234";
+
   if (!passwordMatches(parsed.data.password, expectedPassword)) {
     res.status(401).json({ error: "Incorrect password" });
     return;
