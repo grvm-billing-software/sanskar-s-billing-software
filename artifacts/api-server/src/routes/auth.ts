@@ -1,27 +1,29 @@
 import { Router } from "express";
+import cors from "cors";
 
 const router = Router();
 
-// CORS headers taaki frontend aur Render ke beech communication mein koi rukawat na aaye
-router.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization",
-  );
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-  next();
-});
+// CORS middleware setup
+router.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Origin",
+      "X-Requested-With",
+      "Content-Type",
+      "Accept",
+      "Authorization",
+    ],
+  }),
+);
 
 // Login route jo hptl@1234 password check karega
 router.post("/auth/login", (req, res) => {
-  const { password, username } = req.body || {};
+  const { password } = req.body || {};
 
-  // Agar password 'hptl@1234' match ho jata hai, ya agar koi blank/bypass bheje toh bhi success dega
-  if (!password || password === "hptl@1234") {
+  // Sahi password match hone par success dega
+  if (password === "hptl@1234") {
     return res.json({
       authenticated: true,
       success: true,
