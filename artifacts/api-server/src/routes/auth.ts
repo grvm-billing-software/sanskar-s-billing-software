@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { randomBytes } from "crypto";
-import { eq, lt } from "drizzle-orm";
-import { db } from "../db";
-import { sessionsTable } from "@db/schema";
-import { LoginBody, LoginResponse } from "@shared/api-schema";
+import { eq, gt } from "drizzle-orm";
+import { db } from "../../db";
+import { sessionsTable } from "../../../shared/schema";
+import { LoginBody, LoginResponse } from "../../../shared/api-schema";
 
 const router = Router();
 const sessionDurationMs = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -57,16 +57,18 @@ router.get("/auth/session", async (req, res) => {
     return;
   }
 
-  // Verify session exists in database and is not expired
+  // Verify session exists in DB and has not expired
   const [session] = await db
     .select()
     .from(sessionsTable)
-    .where(eq(sessionsTable.id, token))
-    .limit(1);
+    .where(eq(sessionsTable.id, token));
 
   if (!session || session.expiresAt < new Date()) {
-    // Clear invalid/expired cookie
+    // Clean up invalid/expired cookie and session if needed
     res.clearCookie(cookieName, cookieOptions);
+    if (session) {
+      await db.delete(sessionsTable).where(eq(sessionsTable.id, token));
+    }
     res.json(LoginResponse.parse({ authenticated: false }));
     return;
   }
@@ -77,7 +79,7 @@ router.get("/auth/session", async (req, res) => {
 router.post("/auth/logout", async (req, res) => {
   const token = req.cookies[cookieName];
   if (token) {
-    // Remove session from database
+    // Remove session from the database
     await db.delete(sessionsTable).where(eq(sessionsTable.id, token));
   }
 
