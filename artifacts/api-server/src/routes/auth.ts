@@ -8,7 +8,7 @@ router.use(cors({
   origin: true,
   credentials: true
 }));
-// Login route jo hpth@1234 password check karega
+// Login route jo hptl@1234 password check karega
 router.post("/auth/login", (req, res) => {
   const { password } = req.body || {};
 
