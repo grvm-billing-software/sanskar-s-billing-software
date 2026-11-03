@@ -4,20 +4,10 @@ import cors from "cors";
 const router = Router();
 
 // CORS middleware setup
-router.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Origin",
-      "X-Requested-With",
-      "Content-Type",
-      "Accept",
-      "Authorization",
-    ],
-  }),
-);
-
+router.use(cors({
+  origin: true,
+  credentials: true
+}));
 // Login route jo hptl@1234 password check karega
 router.post("/auth/login", (req, res) => {
   const { password } = req.body || {};
