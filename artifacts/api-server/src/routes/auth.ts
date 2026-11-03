@@ -12,8 +12,15 @@ router.use(cors({
 router.post("/auth/login", (req, res) => {
   const { password } = req.body || {};
 
-  // Sahi password match hone par success dega
+  // Sahi password match hone par cookie set karega aur success dega
   if (password === "hptl@1234") {
+    res.cookie("connect.sid", "admin-session-token", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: 24 * 60 * 60 * 1000
+    });
+
     return res.json({
       authenticated: true,
       success: true,
