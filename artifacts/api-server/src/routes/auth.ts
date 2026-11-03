@@ -8,12 +8,12 @@ router.use(cors({
   origin: true,
   credentials: true
 }));
-// Login route jo adminstaff password check karega
+// Login route jo hpth@1234 password check karega
 router.post("/auth/login", (req, res) => {
   const { password } = req.body || {};
 
   // Sahi password match hone par cookie set karega aur success dega
-  if (password === "adminstaff") {
+  if (password === "hptl@1234") {
     res.cookie("connect.sid", "admin-session-token", {
       httpOnly: true,
       secure: true,
@@ -31,7 +31,7 @@ router.post("/auth/login", (req, res) => {
   return res.status(401).json({
     authenticated: false,
     success: false,
-    message: "Galat password hai bhai! Sahi password 'adminstaff' daal.",
+    message: "Galat password hai bhai! Sahi password 'hptl@1234' daal.",
   });
 });
 
